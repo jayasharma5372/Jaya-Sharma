@@ -1,0 +1,927 @@
+{% assign product = section.settings.product %}
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+<section class="lh-product-showcase " id="lh-showcase-{{ section.id }}" data-section-id="{{ section.id }}">
+  <div class="lh-pdp__container page-width">
+    {% if product != blank %}
+      <!-- Left: Media Gallery & Carousel -->
+      <div class="lh-pdp__media-col">
+        <div class="lh-gallery">
+          <div class="lh-gallery__main-wrap">
+            <button type="button" class="lh-gallery__nav lh-gallery__nav--prev" aria-label="Previous image">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="lh-gallery__track">
+              {% for media in product.media %}
+                <div class="lh-gallery__slide {% if forloop.first %}is-active{% endif %}" data-media-id="{{ media.id }}" data-index="{{ forloop.index0 }}">
+                  {{ media | image_url: width: 1400 | image_tag: loading: 'eager', alt: media.alt | default: product.title }}
+                </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="lh-gallery__nav lh-gallery__nav--next" aria-label="Next image">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+
+          <!-- Mobile Dots Indicator -->
+          <div class="lh-gallery__dots">
+            {% for media in product.media %}
+              <button type="button" class="lh-gallery__dot {% if forloop.first %}is-active{% endif %}" data-index="{{ forloop.index0 }}" aria-label="Go to slide {{ forloop.index }}"></button>
+            {% endfor %}
+          </div>
+
+          <!-- Thumbnails Strip -->
+          {% if product.media.size > 1 %}
+            <div class="lh-gallery__thumbs">
+              {% for media in product.media %}
+                <button type="button" class="lh-gallery__thumb {% if forloop.first %}is-selected{% endif %}" data-media-id="{{ media.id }}" data-index="{{ forloop.index0 }}">
+                  {{ media | image_url: width: 180, height: 210, crop: 'center' | image_tag: loading: 'lazy', alt: media.alt | default: product.title }}
+                </button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right: Product Details & Purchase Form -->
+      <div class="lh-pdp__info-col">
+        <!-- Top Tags & Rating -->
+        <div class="lh-pdp__header-meta">
+          {% if section.settings.pill_badge != blank %}
+            <span class="lh-pdp__pill-badge">{{ section.settings.pill_badge | escape }}</span>
+          {% endif %}
+          <div class="lh-pdp__rating">
+            <span class="lh-pdp__star">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 1.5L11.325 6.225L16.5 6.975L12.75 10.65L13.65 15.75L9 13.35L4.35 15.75L5.25 10.65L1.5 6.975L6.675 6.225L9 1.5Z" fill="#292A26"/>
+              </svg>
+            </span>
+            <span class="lh-pdp__rating-val">{{ section.settings.rating_score | default: '4.6' }}</span>
+            <span class="lh-pdp__rating-reviews">({{ section.settings.review_count | default: '1,240+' }} Reviews)</span>
+          </div>
+        </div>
+
+        <!-- Product Title -->
+        <h1 class="lh-pdp__title">{{ product.title | escape }}</h1>
+
+        <!-- Price Stack -->
+        <div class="lh-pdp__pricing">
+          <span class="lh-pdp__sale-price">{{ current_variant.price | money }}</span>
+          {% if current_variant.compare_at_price > current_variant.price %}
+            <s class="lh-pdp__compare-price">{{ current_variant.compare_at_price | money }}</s>
+            {% assign savings = current_variant.compare_at_price | minus: current_variant.price | times: 100.0 | divided_by: current_variant.compare_at_price | round %}
+            <span class="lh-pdp__discount-tag">SAVE {{ savings }}%</span>
+          {% endif %}
+        </div>
+        <p class="lh-pdp__tax-note">MRP inclusive of all taxes</p>
+
+        <!-- Guarantee Banner Card -->
+        <div class="lh-pdp__feature-card">
+          <div class="lh-pdp__feature-check">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <strong>{{ section.settings.guarantee_title | default: 'Keeps its shape after 50+ washes' }}</strong>
+            <p>{{ section.settings.guarantee_sub | default: 'Heavyweight 320 GSM cotton, tested in our lab. See test results' }}</p>
+          </div>
+        </div>
+
+        {% form 'product', product, id: 'lh-product-form', class: 'lh-pdp__form' %}
+          <input type="hidden" name="id" value="{{ current_variant.id }}" class="lh-variant-id-input">
+
+          {% unless product.has_only_default_variant %}
+            <div class="lh-pdp__options">
+              {% for option in product.options_with_values %}
+                {% assign option_name_down = option.name | downcase %}
+                <div class="lh-pdp__option-group" data-option-index="{{ forloop.index0 }}">
+                  <div class="lh-pdp__option-header">
+                    <span class="lh-pdp__option-label">{{ option.name }}:</span>
+                    <span class="lh-pdp__selected-val">{{ option.selected_value }}</span>
+                  </div>
+
+                  {% if option_name_down contains 'color' or option_name_down contains 'colour' %}
+                    <!-- Color Swatches -->
+                    <div class="lh-swatches">
+                      {% for value in option.values %}
+                        {% assign val_down = value | downcase %}
+                        <button type="button" 
+                          class="lh-swatch {% if option.selected_value == value %}is-active{% endif %}"
+                          data-value="{{ value | escape }}"
+                          data-color="{{ val_down }}"
+                          style="--swatch-color: {{ val_down }};"
+                          aria-label="Color {{ value }}">
+                          <span class="lh-swatch__circle"></span>
+                        </button>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <!-- Size / Value Buttons -->
+                    <div class="lh-sizes">
+                      {% for value in option.values %}
+                        {% assign val_up = value | upcase %}
+                        <div class="lh-size-item">
+                          {% if val_up == 'S' %}
+                            <span class="lh-size-tag">Most Ordered</span>
+                          {% elsif val_up == 'L' %}
+                            <span class="lh-size-tag">Best Fit</span>
+                          {% endif %}
+                          <button type="button" 
+                            class="lh-size-btn {% if option.selected_value == value %}is-active{% endif %}"
+                            data-value="{{ value | escape }}">
+                            {{ value }}
+                          </button>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endunless %}
+
+          <!-- Quantity & Add to Cart -->
+          <div class="lh-pdp__actions">
+            <div class="lh-qty">
+              <button type="button" class="lh-qty__btn" data-step="-1" aria-label="Decrease quantity">−</button>
+              <input type="text" name="quantity" value="01" min="1" readonly class="lh-qty__input">
+              <button type="button" class="lh-qty__btn" data-step="1" aria-label="Increase quantity">+</button>
+            </div>
+
+            <button type="submit" name="add" class="lh-add-to-cart" {% unless current_variant.available %}disabled{% endunless %}>
+              <span>{% if current_variant.available %}ADD TO CART{% else %}SOLD OUT{% endif %}</span>
+              <span class="lh-add-to-cart__arrow">
+                <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 6H18M13 11L18 6L13 1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          <!-- Buy It Now Button -->
+          <button type="button" class="lh-buy-it-now">BUY IT NOW</button>
+
+          <!-- Hidden Variant JSON -->
+          <script type="application/json" class="lh-product-json">
+            {{ product.variants | json }}
+          </script>
+        {% endform %}
+
+        <!-- Coupon Cards Row -->
+        <div class="lh-promos">
+          <div class="lh-promo-card" data-code="LOOM10">
+            <div class="lh-promo-card__icon">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 13C24 19.0751 19.0751 24 13 24C6.92487 24 2 19.0751 2 13C2 6.92487 6.92487 2 13 2C19.0751 2 24 6.92487 24 13Z" stroke-width="1.6" stroke="#292A26"/>
+                <path d="M9 17L17 9" stroke-width="1.6" stroke-linecap="round" stroke="#292A26"/>
+                <circle cx="9.5" cy="9.5" r="1.4" fill="#292A26"/>
+                <circle cx="16.5" cy="16.5" r="1.4" fill="#292A26"/>
+              </svg>
+            </div>
+            <div class="lh-promo-card__text">
+              <strong>Get it for ₹289.75</strong>
+              <span>Use code LOOM10 for 10% off</span>
+            </div>
+            <button type="button" class="lh-promo-card__copy" aria-label="Copy coupon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 6H15C16.1046 6 17 6.89543 17 8V15C17 16.1046 16.1046 17 15 17H8C6.89543 17 6 16.1046 6 15V8C6 6.89543 6.89543 6 8 6Z" stroke-width="1.5" stroke="#292A26"/>
+                <path d="M13 3H5C3.9 3 3 3.9 3 5V13" stroke-width="1.5" stroke-linecap="round" stroke="#292A26"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="lh-promo-card" data-code="LOOM15">
+            <div class="lh-promo-card__icon">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 13C24 19.0751 19.0751 24 13 24C6.92487 24 2 19.0751 2 13C2 6.92487 6.92487 2 13 2C19.0751 2 24 6.92487 24 13Z" stroke-width="1.6" stroke="#292A26"/>
+                <path d="M9 17L17 9" stroke-width="1.6" stroke-linecap="round" stroke="#292A26"/>
+                <circle cx="9.5" cy="9.5" r="1.4" fill="#292A26"/>
+                <circle cx="16.5" cy="16.5" r="1.4" fill="#292A26"/>
+              </svg>
+            </div>
+            <div class="lh-promo-card__text">
+              <strong>Get it for ₹273.65</strong>
+              <span>Buy 2, code LOOM15 for 15% off</span>
+            </div>
+            <button type="button" class="lh-promo-card__copy" aria-label="Copy coupon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 6H15C16.1046 6 17 6.89543 17 8V15C17 16.1046 16.1046 17 15 17H8C6.89543 17 6 16.1046 6 15V8C6 6.89543 6.89543 6 8 6Z" stroke-width="1.5" stroke="#292A26"/>
+                <path d="M13 3H5C3.9 3 3 3.9 3 5V13" stroke-width="1.5" stroke-linecap="round" stroke="#292A26"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    {% else %}
+      <div class="lh-pdp__empty">
+        <p>Please select a product in the theme customizer to view this section.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+#lh-showcase-{{ section.id }} {
+  background-color: #F6F3ED;
+  padding-top: 96px;
+  padding-bottom: 96px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1F201C;
+  box-sizing: border-box;
+}
+
+#lh-showcase-{{ section.id }} * {
+  box-sizing: border-box;
+}
+
+.lh-pdp__container {
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(36px, 5vw, 64px);
+  align-items: flex-start;
+}
+
+.lh-pdp__media-col { width: 100%; }
+.lh-gallery { position: relative; width: 100%; }
+.lh-gallery__main-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.05;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: #EFECE6;
+}
+
+.lh-gallery__track { width: 100%; height: 100%; position: relative; }
+.lh-gallery__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.lh-gallery__slide.is-active { opacity: 1; pointer-events: auto; z-index: 1; }
+.lh-gallery__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.lh-gallery__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(85, 90, 78, 0.85);
+  border: none;
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.lh-gallery__nav:hover { background: #2B2C27; }
+.lh-gallery__nav--prev { left: 20px; }
+.lh-gallery__nav--next { right: 20px; }
+
+.lh-gallery__thumbs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.lh-gallery__thumb {
+  aspect-ratio: 1 / 1.05;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  background: #EFECE6;
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s ease;
+}
+
+.lh-gallery__thumb.is-selected { border-color: #1A1A18; border-width: 2px; }
+.lh-gallery__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lh-gallery__dots { display: none; }
+
+.lh-pdp__info-col { max-width: 580px; }
+.lh-pdp__header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.lh-pdp__pill-badge {
+  display: inline-block;
+  background: #777A67;
+  color: #FFF;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-transform: capitalize;
+  font-family: Lilita One;
+  font-size: 14px;
+  line-height: 100%;
+}
+
+.lh-pdp__rating {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #1F201C;
+}
+
+.lh-pdp__rating-val { font-weight: 700; }
+.lh-pdp__rating-reviews { color: #706F68; font-family: Cabin; font-size: 15px; }
+
+.lh-pdp__title {
+  margin: 0 0 28px;
+  color: #292A26;
+  font-family: Bricolage Grotesque;
+  font-weight: 800;
+  font-size: 48px;
+  line-height: 100%;
+  letter-spacing: -1%;
+}
+
+.lh-pdp__pricing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.lh-pdp__sale-price {
+  font-family: Cabin;
+  font-weight: 600;
+  font-size: 30px;
+  color: #292A26;
+font-weight: 600;
+font-size: 24px;
+line-height: 100%;
+letter-spacing: 0%;
+
+}
+
+.lh-pdp__compare-price {
+  font-size: 19px;
+  color: #8C8C83;
+  text-decoration: line-through;
+}
+
+.lh-pdp__discount-tag {
+  background: #893427;
+  color: #FFF;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.lh-pdp__tax-note {
+  margin: 5px 0 20px;
+  color: #706F68;
+  font-family: Cabin;
+  font-size: 13px;
+}
+
+.lh-pdp__feature-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #E4DED3;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 24px;
+  border: 1px solid #777A67;
+}
+
+.lh-pdp__feature-check {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #737868;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lh-pdp__feature-card strong {
+  display: block;
+  color: #292A26;
+  font-family: Cabin;
+  font-weight: 600;
+  font-size: 17px;
+  margin-bottom: 2px;
+}
+
+.lh-pdp__feature-card p {
+  margin: 0;
+  color: #706F68;
+  font-family: Cabin;
+  font-size: 13px;
+}
+
+.lh-pdp__option-group { margin-bottom: 20px; }
+.lh-pdp__option-header {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1F201C;
+}
+
+.lh-pdp__selected-val { font-weight: 800; margin-left: 2px; }
+.lh-swatches { display: flex; gap: 12px; align-items: center; }
+
+.lh-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 2px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.lh-swatch.is-active { border-color: #1F201C; }
+.lh-swatch__circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: var(--swatch-color, #000);
+  display: block;
+}
+
+.lh-sizes { display: flex; gap: 14px; align-items: flex-end; }
+.lh-size-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.lh-size-tag {
+  background: #777A67;
+  color: #FFF;
+  border-radius: 3px;
+  padding: 2px 6px;
+  position: absolute;
+  top: -8px;
+  white-space: nowrap;
+  font-family: Lilita One;
+  font-size: 11px;
+}
+
+.lh-size-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 999px;
+  border: none;
+  background: #E5E1D4;
+  color: #1F201C;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lh-size-btn.is-active { background: #232521; color: #FFF; }
+
+.lh-pdp__actions { display: flex; gap: 16px; margin: 24px 0 12px; }
+
+.lh-qty {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid #292A26;
+}
+
+.lh-qty__btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #E4DED3;
+  color: #1F201C;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Cabin;
+  font-weight: 500;
+  font-size: 20px;
+  border-radius: 6px;
+}
+
+.lh-qty__input {
+  width: 48px;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1F201C;
+  outline: none;
+}
+
+.lh-add-to-cart {
+  flex: 1;
+  height: 52px;
+  border-radius: 8px;
+  background: #292A26;
+  color: #FFF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: Cabin;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 6%;
+}
+
+.lh-add-to-cart:hover:not(:disabled) { background: #000; }
+
+.lh-buy-it-now {
+  width: 100%;
+  border-radius: 8px;
+  background: #EFECE6;
+  border: 1.5px solid #292A26;
+  color: #292A26;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: background 0.2s;
+  font-family: Cabin;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 16px;
+}
+
+.lh-buy-it-now:hover { background: #E2DFD8; }
+
+.lh-promos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.lh-promo-card {
+  border-radius: 10px;
+  background: #EAE6DB;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  position: relative;
+  cursor: pointer;
+  border: 1px dashed #706F68;
+}
+
+.lh-promo-card__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lh-promo-card__text { flex: 1; }
+.lh-promo-card__text strong {
+  display: block;
+  color: #292A26;
+  font-family: Lilita One;
+  font-size: 16px;
+}
+
+.lh-promo-card__text span {
+  display: block;
+  color: #706F68;
+  white-space: nowrap;
+  font-family: Cabin;
+  font-size: 12px;
+}
+
+.lh-promo-card__copy {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #1F201C;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+@media(max-width:1280px){
+  .lh-promos { grid-template-columns: 1fr; }
+}
+
+@media screen and (max-width: 768px) {
+.lh-pdp__option-header{
+font-family: Cabin;
+font-weight: 500;
+font-size: 12px;
+line-height: 100%;
+letter-spacing: 4%;
+
+}
+#lh-showcase-{{ section.id }} { padding: 40px 16px 48px; }
+.lh-pdp__container { grid-template-columns: 1fr; gap: 18px; padding:0 !important;}
+.lh-gallery__nav, .lh-gallery__thumbs { display: none; }
+.lh-pdp__header-meta {margin-bottom: 18px;}
+.lh-gallery__dots { display: flex; justify-content: flex-start; gap: 6px; margin-top: 14px; }
+.lh-gallery__dot { width: 6px; height: 6px; border-radius: 50%; background: #D2CDC2; border: none; padding: 0; transition: all 0.2s; }
+.lh-pdp__pill-badge{ padding: 4px 10px; font-weight: 400; font-size: 12px; line-height: 100%; letter-spacing: 0%; }
+.lh-pdp__rating-reviews{ font-weight: 500; font-size: 13px; line-height: 100%; letter-spacing: 0%; }
+span.lh-pdp__star { display: flex; }
+.lh-pdp__sale-price { font-size: 24px; }
+.lh-gallery__dot.is-active { width: 20px; border-radius: 999px; background: #3B3D37; }
+.lh-gallery__main-wrap { aspect-ratio: 1 / 1.15; border-radius: 14px; }
+.lh-pdp__title {  margin-bottom: 18px;  margin-bottom: 12px; font-family: Bricolage Grotesque; font-weight: 800; font-size: 32px; line-height: 100%; letter-spacing: -1%;} 
+.lh-promos { grid-template-columns: 1fr; gap: 18px; } }
+.lh-pdp__feature-card { padding: 12px 14px; gap: 12px; margin-bottom: 18px; }
+.lh-pdp__feature-card strong { font-family: Cabin; font-weight: 600; font-size: 14px; line-height: 100%; letter-spacing: 0%; }
+.lh-pdp__feature-card p { font-family: Cabin; font-weight: 400; font-size: 12px; line-height: 100%; letter-spacing: 0%; margin-top: 2px; }
+.lh-pdp__feature-check { width: 28px; height: 28px; }
+.lh-size-btn { height: 42px; }
+span.lh-size-tag { font-family: Lilita One; font-weight: 400; font-size: 10.5px; line-height: 100%; letter-spacing: 0%; padding: 2px 5px; }
+.lh-buy-it-now { margin-bottom: 18px; }
+.lh-promo-card { padding: 10px 14px; }
+.lh-sizes { display: flex; gap: 10px; align-items: flex-end; }
+.lh-promo-card__icon { width: 24px; height: 24px; }
+.lh-promo-card__text strong { font-family: Lilita One; font-weight: 400; font-size: 15px; line-height: 100%; letter-spacing: 0%; }
+.lh-promo-card__text span { font-family: Cabin; font-weight: 400;     margin-top: 2px;font-size: 12px; line-height: 100%; letter-spacing: 0%; }
+}
+</style>
+
+<script>
+(function() {
+  var root = document.getElementById('lh-showcase-{{ section.id }}');
+  if(!root) return;
+
+  var slides = root.querySelectorAll('.lh-gallery__slide');
+  var thumbs = root.querySelectorAll('.lh-gallery__thumb');
+  var dots = root.querySelectorAll('.lh-gallery__dot');
+  var prevBtn = root.querySelector('.lh-gallery__nav--prev');
+  var nextBtn = root.querySelector('.lh-gallery__nav--next');
+  var currentIndex = 0;
+
+  function setSlide(index) {
+    if(index < 0) index = slides.length - 1;
+    if(index >= slides.length) index = 0;
+    currentIndex = index;
+
+    slides.forEach(function(s, i) { s.classList.toggle('is-active', i === currentIndex); });
+    thumbs.forEach(function(t, i) { t.classList.toggle('is-selected', i === currentIndex); });
+    dots.forEach(function(d, i) { d.classList.toggle('is-active', i === currentIndex); });
+  }
+
+  if(prevBtn) prevBtn.addEventListener('click', function() { setSlide(currentIndex - 1); });
+  if(nextBtn) nextBtn.addEventListener('click', function() { setSlide(currentIndex + 1); });
+
+  thumbs.forEach(function(thumb) {
+    thumb.addEventListener('click', function() { setSlide(parseInt(this.dataset.index, 10)); });
+  });
+
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() { setSlide(parseInt(this.dataset.index, 10)); });
+  });
+
+  var startX = 0;
+  var track = root.querySelector('.lh-gallery__main-wrap');
+  if (track) {
+    track.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive: true});
+    track.addEventListener('touchend', function(e) {
+      var diffX = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diffX) > 40) {
+        if(diffX > 0) setSlide(currentIndex + 1);
+        else setSlide(currentIndex - 1);
+      }
+    }, {passive: true});
+  }
+
+  var qtyInput = root.querySelector('.lh-qty__input');
+  root.querySelectorAll('.lh-qty__btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var step = parseInt(this.dataset.step, 10);
+      var current = parseInt(qtyInput.value, 10) || 1;
+      var newVal = Math.max(1, current + step);
+      qtyInput.value = newVal < 10 ? '0' + newVal : newVal;
+    });
+  });
+
+  var variants = JSON.parse(root.querySelector('.lh-product-json').textContent || '[]');
+  var idInput = root.querySelector('.lh-variant-id-input');
+  var priceEl = root.querySelector('.lh-pdp__sale-price');
+  var compareEl = root.querySelector('.lh-pdp__compare-price');
+  var addBtn = root.querySelector('.lh-add-to-cart');
+
+  function getSelectedOptions() {
+    var selected = [];
+    root.querySelectorAll('.lh-pdp__option-group').forEach(function(group) {
+      var active = group.querySelector('.lh-swatch.is-active, .lh-size-btn.is-active');
+      if (active) selected.push(active.dataset.value);
+    });
+    return selected;
+  }
+
+  function updateVariant() {
+    var chosen = getSelectedOptions();
+    var matchedVariant = variants.find(function(v) {
+      return v.options.every(function(opt, i) { return opt === chosen[i]; });
+    });
+
+    if (matchedVariant) {
+      idInput.value = matchedVariant.id;
+      if (addBtn) {
+        addBtn.disabled = !matchedVariant.available;
+        addBtn.querySelector('span').textContent = matchedVariant.available ? 'ADD TO CART' : 'SOLD OUT';
+      }
+      
+      var moneyFormat = window.theme && window.theme.moneyFormat ? window.theme.moneyFormat : '₹{{amount}}';
+      var formattedPrice = (window.Shopify && Shopify.formatMoney) ? Shopify.formatMoney(matchedVariant.price, moneyFormat) : '₹' + (matchedVariant.price / 100).toFixed(2);
+      if (priceEl) priceEl.textContent = formattedPrice;
+
+      if (matchedVariant.compare_at_price > matchedVariant.price) {
+        var formattedCompare = (window.Shopify && Shopify.formatMoney) ? Shopify.formatMoney(matchedVariant.compare_at_price, moneyFormat) : '₹' + (matchedVariant.compare_at_price / 100).toFixed(2);
+        if (compareEl) {
+          compareEl.textContent = formattedCompare;
+          compareEl.style.display = 'inline-block';
+        }
+      } else if (compareEl) {
+        compareEl.style.display = 'none';
+      }
+
+      if (matchedVariant.featured_media) {
+        var targetIndex = -1;
+        slides.forEach(function(s, idx) {
+          if (s.dataset.mediaId == matchedVariant.featured_media.id) targetIndex = idx;
+        });
+        if (targetIndex !== -1) setSlide(targetIndex);
+      }
+    }
+  }
+
+  root.querySelectorAll('.lh-swatch, .lh-size-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var group = this.closest('.lh-pdp__option-group');
+      group.querySelectorAll('.lh-swatch, .lh-size-btn').forEach(function(b) { b.classList.remove('is-active'); });
+      this.classList.add('is-active');
+      var valHolder = group.querySelector('.lh-pdp__selected-val');
+      if(valHolder) valHolder.textContent = this.dataset.value;
+      updateVariant();
+    });
+  });
+
+  // --- AJAX SUBMIT FORM TO OPEN DRAWER WITHOUT PAGE RELOAD ---
+  var form = root.querySelector('#lh-product-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      var submitBtn = form.querySelector('.lh-add-to-cart');
+      var btnSpan = submitBtn ? submitBtn.querySelector('span') : null;
+      var originalText = btnSpan ? btnSpan.textContent : 'ADD TO CART';
+      if (btnSpan) btnSpan.textContent = 'ADDING…';
+      if (submitBtn) submitBtn.disabled = true;
+
+      var formData = new FormData(form);
+      formData.append('sections', 'cart-drawer,cart-icon-bubble');
+      formData.append('sections_url', window.location.pathname);
+
+      fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(state) {
+        if (btnSpan) btnSpan.textContent = originalText;
+        if (submitBtn) submitBtn.disabled = false;
+
+        var cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer) {
+          cartDrawer.classList.remove('is-empty');
+          var inner = cartDrawer.querySelector('.drawer__inner');
+          if (inner) inner.classList.remove('is-empty');
+
+          if (state.sections) {
+            cartDrawer.renderContents(state);
+          }
+          cartDrawer.open();
+        }
+
+        // Trigger auto-item check immediately
+        if (window.lhSyncCartRules) window.lhSyncCartRules();
+      })
+      .catch(function(err) {
+        console.error(err);
+        if (btnSpan) btnSpan.textContent = originalText;
+        if (submitBtn) submitBtn.disabled = false;
+      });
+    });
+  }
+
+  // Buy it now
+  var buyNowBtn = root.querySelector('.lh-buy-it-now');
+  if (buyNowBtn) {
+    buyNowBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var formData = new FormData(form);
+      fetch('/cart/add.js', {
+        method: 'POST',
+        body: formData
+      }).then(function() {
+        window.location.href = '/checkout';
+      });
+    });
+  }
+
+  // Promo copy
+  root.querySelectorAll('.lh-promo-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var code = this.dataset.code;
+      navigator.clipboard.writeText(code).then(function() {
+        var label = card.querySelector('span');
+        var originalText = label.textContent;
+        label.textContent = 'Copied to clipboard!';
+        setTimeout(function() { label.textContent = originalText; }, 2000);
+      });
+    });
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Loomhaus featured product",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Select Product"
+    },
+    {
+      "type": "text",
+      "id": "pill_badge",
+      "label": "Top Badge",
+      "default": "Loomhaus #1 Everyday Top"
+    },
+    {
+      "type": "text",
+      "id": "rating_score",
+      "label": "Rating Score",
+      "default": "4.6"
+    },
+    {
+      "type": "text",
+      "id": "review_count",
+      "label": "Review Count",
+      "default": "1,240+"
+    },
+    {
+      "type": "text",
+      "id": "guarantee_title",
+      "label": "Guarantee Title",
+      "default": "Keeps its shape after 50+ washes"
+    },
+    {
+      "type": "text",
+      "id": "guarantee_sub",
+      "label": "Guarantee Subtitle",
+      "default": "Heavyweight 320 GSM cotton, tested in our lab. See test results"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Loomhaus featured product"
+    }
+  ]
+}
+{% endschema %}
